@@ -350,7 +350,7 @@ void print_externals_table(EXTERNALS_TABLE* pExternalsTable, FILE* fout)
         pCurAddress = pCurExternal->pExternalCodeAddresses->head;
         while (pCurAddress)
         {
-            fprintf(fout, "%s %06d\n", pCurExternal->extLabel, *(int*)(pCurAddress->data));
+            fprintf(fout, "%s %07d\n", pCurExternal->extLabel, *(int*)(pCurAddress->data));
             pCurAddress = pCurAddress->next;
         }
         pCurExternal = pCurExternal->next;

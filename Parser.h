@@ -13,7 +13,7 @@ BOOLEAN get_label(char *command_line, char **endp, char* label);
 * Retreives command from the command line. In case if not found or command unknown it FALSE.
 * The function assigns the tail to the *endp. the command is store in the commandBuffer.
 */
-BOOLEAN get_cmd(char *command_line, char **endp, char *commandBuffer);
+BOOLEAN get_cmd(char *command_line, char **endp, char *commandBuffer, int lineCnt);
 
 /**
 * Cheks if command is data command. Returns TRUE if
@@ -49,7 +49,7 @@ BOOLEAN is_comment_line(char * commandLine);
 * it returns the number of operands added to the operands array.
 * In case of parsing error or some other failure return -1.
 */
-int prepare_operands_for_cmd(char* cmd, char* command_line, char*** operands);
+int prepare_operands_for_cmd(char* cmd, char* command_line, char*** operands, int lineCnt);
 
 /**
 * Checks if the command is string.

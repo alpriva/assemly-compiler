@@ -1,20 +1,31 @@
 #ifndef __UTILITIES__
 #define __UTILITIES__
 
+#define PRINT_NO_MEMORY_ERR() printf("Failed to allocate memory, exiting...\n"); 
+
 #define RETURN_ON_MEMORY_FAILURE(pointerToCheck, valToReturn) \
             if (!(pointerToCheck)) \
             { \
                 printf("Failed to allocate memory, exiting..."); \
                 return (valToReturn); \
             }
+
+#define PRINT_ERR(lineCnt, message) printf("Error: In line %d. %s\n", lineCnt, message);
             
-#define GOTO_LABEL_ON_NULL(pointerToCheck, label, statusVar, statusToSet, message) \
+#define GOTO_LABEL_ON_NULL(pointerToCheck, label, statusVar, statusToSet, lineCnt, message) \
             if (!pointerToCheck) \
             { \
                 statusVar = statusToSet; \
-                printf(message); \
+                PRINT_ERR(lineCnt, message) \
                 goto label; \
             }
+
+#define GOTO_LABEL_ON_STATUS_ERR(statusToCheck, label, statusVar, statusToSet, lineCnt, message) \
+            GOTO_LABEL_ON_NULL(statusToCheck, label, statusVar, statusToSet, lineCnt, message)
+
+#define RETURN_STATUS_ON_ERR(valueToReturn, lineCnt, message) \
+            PRINT_ERR(lineCnt, message) \
+            return valueToReturn;
 
 typedef enum
 {
