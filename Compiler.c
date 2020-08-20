@@ -224,9 +224,13 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
         lineCnt++;
         
         // Handle the case with a line bigger then supported.
-        while (strlen(cmdLine) > LINE_SIZE && fgets(cmdLine, LINE_BUFFER_SIZE, fin) != NULL)
+        while (strlen(cmdLine) > LINE_SIZE)
         {
             lineWasTooBig = TRUE;
+            if (fgets(cmdLine, LINE_BUFFER_SIZE, fin) == NULL)
+            {
+                break;
+            }
         }
 
         if (lineWasTooBig)
