@@ -1,10 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Compiler.h"
 #include "Parser.h"
 #include "Tables.h"
 #include "Translator.h"
 #include "LangDefs.h"
+
+// the buffer should include one more character and the null terminator
+#define LABEL_BUFFER_SIZE MAX_LABEL_SIZE + 2
+// the buffer should include one more character and the null terminator
+#define CMD_BUFFER_SIZE MAX_CMD_SIZE + 2
+// the buffer should include one more character and the null terminator
+#define LINE_BUFFER_SIZE LINE_SIZE + 2
 
 /**
 * This function handles the entry command. Assumes that Symbol table is already populated.
@@ -30,6 +38,11 @@ BOOLEAN handle_entry_cmd(char *cmd, char *commandLine, int lineCnt, SYMBOL_TABLE
     if (!pSymbolTableEntry)
     {
         printf("Error: In line - %d. No such symbol - %s\n", lineCnt, operands[0]);    // TODO convert to usage of variadic macro 
+        status = FALSE;
+    }
+    else if (pSymbolTableEntry->type & EXTERNAL)
+    {
+        PRINT_ERR(lineCnt, "The external label in the current file cannot be entry.");
         status = FALSE;
     }
     else
@@ -117,7 +130,7 @@ BOOLEAN complete_cmd_in_cmd_table(CMD_TABLE* pCmdTable, SYMBOL_TABLE* pSymbolTab
                 goto prepare_for_exit;
             }
 
-            if (pSymbolTableEntry->type & EXTERNAL)
+            if (pSymbolTableEntry->type & EXTERNAL && is_relative(label))
             {
                 printf("Error: In line - %d. Invalid operand - %s\n", lineCnt, label); // TODO convert to usage of variadic macro 
                 status = FALSE;
@@ -195,28 +208,49 @@ BOOLEAN add_label_to_symbol_table(SYMBOL_TABLE* pSymbolTable, char* label, SYMBO
 */
 BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, DATA_TABLE* pDataTable, EXTERNALS_TABLE* pExternalsTable, int *icf, int *dcf)
 {
-    char cmdLine[LINE_SIZE];
+    char cmdLine[LINE_BUFFER_SIZE];
     int dc = DATA_SECTION_START, ic = COMMAND_SECTION_START;
     int lineCnt = 0, machineCodesLength, operandsCnt;
-    BOOLEAN found_error = FALSE, status,found_label;
-    char label[MAX_LABEL_SIZE];
-    char cmd[MAX_CMD_SIZE]; 
+    BOOLEAN found_error = FALSE, status, found_label, lineWasTooBig = FALSE;
+    char label[LABEL_BUFFER_SIZE];
+    char cmd[CMD_BUFFER_SIZE]; 
     char *restOfCmd;
     char** operands = NULL;
     int* machineCodes = NULL;
+    SYMBOL_TABLE_ENTRY* pSymbol;
 
-    while (fgets(cmdLine, LINE_SIZE, fin) != NULL) 
+    while (fgets(cmdLine, LINE_BUFFER_SIZE, fin) != NULL)
     {
         lineCnt++;
-        free_variables(1, machineCodes);
-        machineCodes = NULL;
-        restOfCmd = &cmdLine[0];
         
-        if (check_empty(restOfCmd)|| is_comment_line(restOfCmd))
+        // Handle the case with a line bigger then supported.
+        while (strlen(cmdLine) > LINE_SIZE && fgets(cmdLine, LINE_BUFFER_SIZE, fin) != NULL)
+        {
+            lineWasTooBig = TRUE;
+        }
+
+        if (lineWasTooBig)
+        {
+            PRINT_ERR(lineCnt, "The line has too many characters. Maximum 80 is supported.");
+            lineWasTooBig = FALSE;
+            continue;
+        }
+
+        restOfCmd = &cmdLine[0];
+        if (check_empty(restOfCmd) || is_comment_line(restOfCmd))
         {
             continue;
         }
-        found_label = get_label(restOfCmd, &restOfCmd, label);
+
+        free_variables(1, machineCodes);
+        machineCodes = NULL;
+
+        status = get_label(restOfCmd, &restOfCmd, label, &found_label, lineCnt);
+        if (!status)
+        {
+            found_error = TRUE;
+            continue;
+        }
         status = get_cmd(restOfCmd, &restOfCmd, cmd, lineCnt);
         if (!status)
         {
@@ -240,12 +274,11 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
                 found_error = TRUE;
                 continue;
             }
-            machineCodesLength = build_machine_code(cmd, operands, operandsCnt, &machineCodes);
+            machineCodesLength = build_machine_code(cmd, operands, operandsCnt, &machineCodes, lineCnt);
             free_array_of_strings(operands, operandsCnt);
             if (machineCodesLength < 0)
             {
                 found_error = TRUE;
-                printf("Error: In line - %d. Failed to compile the operands of the command - %s.\n", lineCnt, cmd); // TODO convert to usage of variadic macro 
                 continue;
             }
             add_entries_to_data_table(pDataTable, machineCodes, machineCodesLength);
@@ -256,13 +289,18 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
         {
             if (found_label)
             {
-                PRINT_ERR(lineCnt, "The extern directive cannot be labeled.");
-                found_error = TRUE;
-                continue;
+                PRINT_WARN(lineCnt, "The extern directive label is ignored.");
             }
             operandsCnt = prepare_operands_for_cmd(cmd, restOfCmd, &operands, lineCnt);
             if (operandsCnt < 0)
             {
+                found_error = TRUE;
+                continue;
+            }
+            pSymbol = get_symbol_entry(pSymbolTable, operands[0]);
+            if (pSymbol)    // if the symbol is already defined
+            {
+                PRINT_ERR(lineCnt, "The symbol is already defined in the current file.");
                 found_error = TRUE;
                 continue;
             }
@@ -287,12 +325,11 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
                 found_error = TRUE;
                 continue;
             }
-            machineCodesLength = build_machine_code(cmd, operands, operandsCnt, &machineCodes);
+            machineCodesLength = build_machine_code(cmd, operands, operandsCnt, &machineCodes, lineCnt);
             free_array_of_strings(operands, operandsCnt);
             if (machineCodesLength < 0)
             {
                 found_error = TRUE;
-                printf("Error: In line - %d. Failed to compile the operands of the command - %s.\n", lineCnt, cmd); // TODO convert to usage of variadic macro 
                 continue;
             }
             add_entry_to_code_table(pCmdTable, machineCodes, machineCodesLength, ic);
@@ -302,8 +339,7 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
         {
             if (found_label)
             {
-                PRINT_ERR(lineCnt, "The entry directive cannot be labeled.");
-                found_error = TRUE;
+                PRINT_WARN(lineCnt, "The entry directive label is ignored.");
             }
         }
     }
@@ -325,10 +361,10 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
 */
 BOOLEAN second_pass(FILE *fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE *pCmdTable, DATA_TABLE *pDataTable, EXTERNALS_TABLE* pExternalsTable)
 {
-    BOOLEAN found_error = FALSE, status;
-    char cmdLine[LINE_SIZE];
-    char label[MAX_LABEL_SIZE]; 
-    char cmd[MAX_CMD_SIZE];
+    BOOLEAN found_error = FALSE, status, foundLabel;
+    char cmdLine[LINE_BUFFER_SIZE];
+    char label[LABEL_BUFFER_SIZE]; 
+    char cmd[CMD_BUFFER_SIZE];
     int lineCnt = 0, cmdCnt = 0;
     char *restOfCmd;
 
@@ -338,7 +374,7 @@ BOOLEAN second_pass(FILE *fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE *pCmdTable,
         return FALSE;
     }
 
-    while (fgets(cmdLine, LINE_SIZE, fin) != NULL)
+    while (fgets(cmdLine, LINE_SIZE+1, fin) != NULL)
     {
         lineCnt++;
         restOfCmd = &cmdLine[0];
@@ -346,7 +382,7 @@ BOOLEAN second_pass(FILE *fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE *pCmdTable,
         {
             continue;
         }
-        get_label(restOfCmd, &restOfCmd, label);    // skip label
+        get_label(restOfCmd, &restOfCmd, label, &foundLabel, lineCnt);    // skip label
         status = get_cmd(restOfCmd, &restOfCmd, cmd, lineCnt);
         if (!status)
         {
@@ -458,27 +494,27 @@ BOOLEAN compile(FILE* fin, char* fileName)
     {
         printf("Couldn't allocate tables, exiting...\n");
         status = FALSE;
-        goto PREPARE_TO_RETURN;
+        goto prepare_to_return;
     }
 
     status = first_pass(fin, pSymbolTable, pCmdTable, pDataTable, pExternalsTable, &icf, &dcf);
     if (!status)
     {
-        goto PREPARE_TO_RETURN;
+        goto prepare_to_return;
     }
     status = second_pass(fin, pSymbolTable, pCmdTable, pDataTable, pExternalsTable);
     if (!status)
     {
-        goto PREPARE_TO_RETURN;
+        goto prepare_to_return;
     }
 
     status = generate_output(fileName, pSymbolTable, pCmdTable, pDataTable, pExternalsTable, icf, dcf);
     if (!status)
     {
-        goto PREPARE_TO_RETURN;
+        goto prepare_to_return;
     }
 
-PREPARE_TO_RETURN:
+prepare_to_return:
     release_symbol_table(pSymbolTable);
     release_cmd_table(pCmdTable);
     release_data_table(pDataTable);

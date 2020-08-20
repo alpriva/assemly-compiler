@@ -62,11 +62,11 @@ BOOLEAN is_valid_label(char *label)
     int i;
     size_t length = strlen(label);
 
-    if ((isalpha(label[0]) == 0) || (label[length - 1] != ':') || (is_keyword(label)))
+    if ((isalpha(label[0]) == 0) || (is_keyword(label)))
     {
         return FALSE;
     }
-    for (i = 1; i < length - 1; i++)
+    for (i = 1; i < length; i++)
     {
         if ((isalpha(label[i]) == 0) && (isdigit(label[i]) == 0))
         {
@@ -77,27 +77,58 @@ BOOLEAN is_valid_label(char *label)
     return TRUE;
 }
 
-BOOLEAN get_label(char *command_line, char **endp, char* label)
+BOOLEAN get_label(char *command_line, char **endp, char* label, BOOLEAN* foundLabel, int lineCnt)
 {
     size_t labelLength;
+    *foundLabel = FALSE;
     if (sscanf(command_line, "%32s", label) == 1)
     {
-        if (is_valid_label(label))
+        labelLength = strlen(label);    // including the :
+        if (labelLength > MAX_LABEL_SIZE)
         {
-            labelLength = strlen(label);    // including the :
+            PRINT_ERR(lineCnt, "The label is too long.");
+            return FALSE;   // Indicate error
+        }
+        if (label[labelLength - 1] == ':')  // ends with ':' => label syntax
+        {
             label[labelLength - 1] = '\0';    // replacing : with end of string.
-            *endp = strchr(command_line, label[0]) + labelLength;
-            return TRUE;
+            if (is_valid_label(label))
+            {
+                *endp = strchr(command_line, label[0]) + labelLength;
+                *foundLabel = TRUE;
+                return TRUE;
+            }
+            else
+            {
+                PRINT_ERR(lineCnt, "The label is not valid.");
+                return FALSE;   // Indicate error
+            }
+        }
+        else
+        {
+            return TRUE;    // indicate success as label doesn't have to be there.
         }
     }
-    return FALSE;
+    return TRUE;   // indicate success as label doesn't have to be there.
 }
 
 BOOLEAN get_cmd(char *command_line, char **endp, char *commandBuffer, int lineCnt)
 {
 
-    if (sscanf(command_line, "%7s", commandBuffer) == 1)
+    if (sscanf(command_line, "%8s", commandBuffer) == 1)
     {
+        if (strlen(commandBuffer) > MAX_CMD_SIZE) 
+        {
+            if (commandBuffer[0] != '.')
+            {
+                PRINT_ERR(lineCnt, "Invalid command.");
+            }
+            else
+            {
+                PRINT_ERR(lineCnt, "Invalid directive.");
+            }
+            return FALSE;
+        }
         if (is_cmd(commandBuffer) || is_directive(commandBuffer))
         {
             *endp = strchr(command_line, commandBuffer[0]) + strlen(commandBuffer);
@@ -113,7 +144,6 @@ BOOLEAN get_cmd(char *command_line, char **endp, char *commandBuffer, int lineCn
             {
                 PRINT_ERR(lineCnt, "Invalid directive.");
             }
-            
         }
     }
     else
@@ -382,7 +412,7 @@ BOOLEAN is_relative(char *operand)
     return is_valid_label_in_operand(operand + 1);
 }
 
-BOOLEAN is_valid_cmd_operand(CMD_TYPE *pCmdType, char *operand, int operandPosition, int lineCnt)
+BOOLEAN is_valid_addr_resolution(CMD_TYPE *pCmdType, char *operand, int operandPosition, int lineCnt)
 {
     int typeFlag = 0;
     char *positionDescription;
@@ -443,11 +473,19 @@ int prepare_operands_for_cmd_instr(char *command, char* commandLine, char*** ope
         {
             if (commands[i].operands_number == 0)
             {
+                if (!check_empty(commandLine))
+                {
+                    PRINT_ERR(lineCnt, "Extra characters after command.");
+                    return -1;
+                }
                 return 0;
             }
             operandsCnt = commands[i].operands_number;
-            *operands = (char**)malloc(operandsCnt * sizeof(char*));
-            RETURN_ON_MEMORY_FAILURE(*operands, -1);
+            *operands = create_array_of_strings(operandsCnt);
+            if (!*operands)
+            {
+                return -1;
+            }
             for (j = 0; j < operandsCnt; j++)
             {
                 ((*operands)[j]) = NULL;
@@ -455,10 +493,10 @@ int prepare_operands_for_cmd_instr(char *command, char* commandLine, char*** ope
                 if (!status)
                 {
                     free_array_of_strings(*operands, j + 1);    // free all the operands allocated by now.
-                    PRINT_ERR(lineCnt, "Missing operands.");
+                    PRINT_ERR(lineCnt, "Missing operand.");
                     return -1;
                 }
-                if (!is_valid_cmd_operand(&commands[i], buffer, j, lineCnt))
+                if (!is_valid_addr_resolution(&commands[i], buffer, j, lineCnt))
                 {
                     free_array_of_strings(*operands, j + 1);    // free all the operands allocated by now.
                     return -1;
@@ -476,20 +514,16 @@ int prepare_operands_for_cmd_instr(char *command, char* commandLine, char*** ope
                     break;
                 }
             }
-            if (!check_empty(commandLine))  // more characters.
+            if (j < operandsCnt)
             {
-                if (j >= operandsCnt)
-                {
-                    free_array_of_strings(*operands, operandsCnt);
-                    PRINT_ERR(lineCnt, "Extra characters after command.");
-                }
-                else
-                {
-                    free_array_of_strings(*operands, j + 1);    
-                    PRINT_ERR(lineCnt, "Missing operands.");
-                }
-                      
-                
+                free_array_of_strings(*operands, operandsCnt);
+                PRINT_ERR(lineCnt, "Missing operands.");
+                return -1;
+            }
+            else if (!check_empty(commandLine))  // more characters.
+            {
+                free_array_of_strings(*operands, operandsCnt);
+                PRINT_ERR(lineCnt, "Extra characters after command.");
                 return -1;
             }
             break;

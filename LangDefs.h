@@ -1,11 +1,12 @@
 #ifndef __LANGDEFS__
 #define __LANGDEFS__
 
-#define LINE_SIZE 81
+#define LINE_SIZE 80
+
 #define COMMAND_SECTION_START 100
 #define DATA_SECTION_START 0
-#define MAX_LABEL_SIZE 33
-#define MAX_CMD_SIZE 8
+#define MAX_LABEL_SIZE 31
+#define MAX_CMD_SIZE 7
 
 #define OP_TYPE_IMIDIATE 0x1
 #define OP_TYPE_DIRECT   0x2

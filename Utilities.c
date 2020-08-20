@@ -105,6 +105,18 @@ void free_linked_list(LinkedList *pList)
     }
 }
 
+char** create_array_of_strings(int elCnt)
+{
+    int i;
+    char **newArr = (char**)malloc(elCnt * sizeof(char*));
+    RETURN_ON_MEMORY_FAILURE(newArr, NULL);
+    for (i = 0; i < elCnt; i++)
+    {
+        newArr[i] = NULL;
+    }
+    return newArr;
+}
+
 void free_array_of_strings(char** arr, int elCnt)
 {
     int i;

@@ -7,7 +7,7 @@
 * Retreives label from the command line. The function assigns the tail to the *endp.
 * In case label not found returns FALSE and *endp is not moved.
 */
-BOOLEAN get_label(char *command_line, char **endp, char* label);
+BOOLEAN get_label(char *command_line, char **endp, char* label, BOOLEAN* foundLabel, int lineCnt);
 
 /**
 * Retreives command from the command line. In case if not found or command unknown it FALSE.

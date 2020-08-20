@@ -14,7 +14,7 @@ BOOLEAN is_valid_machine_code(int code);
 * In case of operands are labels, it leaves the machine code invalid for this operand.
 * Returns the number of words in the machineCodes array.
 */
-int build_machine_code(char* cmd, char** operands, int operandsCnt, int** machineCodes);
+int build_machine_code(char* cmd, char** operands, int operandsCnt, int** machineCodes, int lineCnt);
 
 /**
 * Builds and returns the machine code for relative to cmdAddress label.

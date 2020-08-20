@@ -9,7 +9,7 @@
                 printf("Failed to allocate memory, exiting..."); \
                 return (valToReturn); \
             }
-
+#define PRINT_WARN(lineCnt, message) printf("Warning: In line %d. %s\n", lineCnt, message);
 #define PRINT_ERR(lineCnt, message) printf("Error: In line %d. %s\n", lineCnt, message);
             
 #define GOTO_LABEL_ON_NULL(pointerToCheck, label, statusVar, statusToSet, lineCnt, message) \
@@ -75,6 +75,12 @@ void apply_to_linked_list(LinkedList *pList, FUNCTION_TO_APPLY_ON_LINKED_LIST_EN
 * Frees the list of strings
 */
 void free_linked_list(LinkedList *pList);
+
+/**
+* 
+*/
+char** create_array_of_strings(int elCnt);
+
 
 /**
 * Frees array of strings.
