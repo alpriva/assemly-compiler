@@ -1,4 +1,4 @@
-#include <string.h>
+﻿#include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -53,13 +53,13 @@ BOOLEAN add_entry_to_list(LinkedList* pList, void* data, size_t dataLengthInByte
 
     if (!entry)
     {
-        printf("No memory to create entry in list of strings\n");
+        PRINT_NO_MEMORY_ERR();
         return FALSE;
     }
     entry->data = malloc(dataLengthInByte); 
     if (!entry->data)
     {
-        printf("No memory to create entry in list of strings\n");
+        PRINT_NO_MEMORY_ERR();
         free(entry);
         return FALSE;
     }
@@ -98,6 +98,7 @@ void free_linked_list(LinkedList *pList)
         while (curNode)
         {
             nextNode = curNode->next;
+            free(curNode->data);
             free(curNode);
             curNode = nextNode;
         }

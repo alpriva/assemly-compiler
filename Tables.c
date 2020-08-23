@@ -1,16 +1,18 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "Tables.h"
 
 BOOLEAN add_entry_to_symbol_table(SYMBOL_TABLE* pSymbolTable, char* symbol, SYMBOL_TYPE symType, int addr)
 {
-    SYMBOL_TABLE_ENTRY *pCur;
+    SYMBOL_TABLE_ENTRY *pCur = pSymbolTable->Head;
     SYMBOL_TABLE_ENTRY *new_entry = (SYMBOL_TABLE_ENTRY*)malloc(sizeof(SYMBOL_TABLE_ENTRY));
     if (!new_entry)
     {
         return FALSE;
     }
+    
+    // initialize the new entry
     new_entry->label = (char*)malloc(sizeof(strlen(symbol)+1));   
     if (!new_entry->label)
     {
@@ -21,9 +23,10 @@ BOOLEAN add_entry_to_symbol_table(SYMBOL_TABLE* pSymbolTable, char* symbol, SYMB
     new_entry->addr = addr;
     new_entry->type = symType; 
     new_entry->next = NULL;
-    pCur = pSymbolTable->Head;
+
     if (pCur)
     {
+        // find the last element so we can add the new entry
         while (pCur->next)
         {
             pCur = pCur->next;
@@ -50,12 +53,13 @@ void select_from_symbol_table(SYMBOL_TABLE* pSymbolTable, SELECT_PREDICATE predi
 
 BOOLEAN add_entry_to_code_table(CMD_TABLE* pCmdTable, int* machineCodes, int length, int ic)
 {
-    CMD_TABLE_ENTRY *pCur;
+    CMD_TABLE_ENTRY *pCur = pCmdTable->Head;
     CMD_TABLE_ENTRY *new_entry = (CMD_TABLE_ENTRY*)malloc(sizeof(CMD_TABLE_ENTRY));
     if (!new_entry)
     {
         return FALSE;
     }
+    // initialize the new entry
     new_entry->MachineCodes = (int*)malloc(sizeof(int) * length);
     if (!new_entry->MachineCodes)
     {
@@ -66,9 +70,10 @@ BOOLEAN add_entry_to_code_table(CMD_TABLE* pCmdTable, int* machineCodes, int len
     new_entry->MachineCodesLength = length;
     new_entry->cmdAddress = ic;
     new_entry->next = NULL;
-    pCur = pCmdTable->Head;
+
     if (pCur)
     {
+        // find the last element so we can add the new entry
         while (pCur->next)
         {
             pCur = pCur->next;
@@ -85,17 +90,20 @@ BOOLEAN add_entry_to_code_table(CMD_TABLE* pCmdTable, int* machineCodes, int len
 
 BOOLEAN add_entry_to_data_table(DATA_TABLE* pDataTable, int machineCode)
 {
-    DATA_TABLE_ENTRY *pCur;
+    DATA_TABLE_ENTRY *pCur = pDataTable->Head;
     DATA_TABLE_ENTRY *new_entry = (DATA_TABLE_ENTRY*)malloc(sizeof(DATA_TABLE_ENTRY));
     if (!new_entry)
     {
         return FALSE;
     }
+
+    // initialize the new entry
     new_entry->data = machineCode;
     new_entry->next = NULL;
-    pCur = pDataTable->Head;
+
     if (pCur)
     {
+        // find the last element so we can add the new entry
         while (pCur->next)
         {
             pCur = pCur->next;
@@ -127,24 +135,23 @@ BOOLEAN add_label_to_externals_table(EXTERNALS_TABLE* pExternalsTable, char* lab
 {
     EXTERNALS_TABLE_ENTRY *pCur = pExternalsTable->Head;
     EXTERNALS_TABLE_ENTRY *pNewElem = (EXTERNALS_TABLE_ENTRY*)malloc(sizeof(EXTERNALS_TABLE_ENTRY));
-    if (!pNewElem)
-    {
-        return FALSE;   // TODO switch to MACRO - NOT_ENOUGH_MEMORY_ERROR
-    }
+    RETURN_ON_MEMORY_FAILURE(pNewElem, FALSE);
+    
+    // initialize the new element
     pNewElem->next = NULL;
     pNewElem->extLabel = (char*)malloc(strlen(label) + 1);
-    if (!pNewElem->extLabel)
-    {
-        return FALSE;   // TODO switch to MACRO - NOT_ENOUGH_MEMORY_ERROR
-    }
+    RETURN_ON_MEMORY_FAILURE(pNewElem->extLabel, FALSE);
     strcpy(pNewElem->extLabel, label);
     pNewElem->pExternalCodeAddresses = init_linked_list();
+    RETURN_ON_MEMORY_FAILURE(pNewElem->pExternalCodeAddresses, FALSE);
+
     if (!pCur)  // table is empty
     {
         pExternalsTable->Head = pNewElem;
     }
     else
     {
+        // find the last element so we can add the new entry
         while (pCur->next)
         {
             pCur = pCur->next;
@@ -159,14 +166,15 @@ BOOLEAN add_call_addr_to_external(EXTERNALS_TABLE* pExternalsTable, char* extern
     EXTERNALS_TABLE_ENTRY *pCur = pExternalsTable->Head;
     while (pCur)
     {
-        if (strcmp(pCur->extLabel, externalLabel) == 0)
+        if (strcmp(pCur->extLabel, externalLabel) == 0)                 // if found the label
         {
             add_entry_to_list(pCur->pExternalCodeAddresses, &ic, 4);    // first 4 byte is enough, as the address cannot be more than 21 bit length.
             return TRUE;
         }
         pCur = pCur->next;
     }
-    return FALSE;
+
+    return FALSE;   // in case of label is not found
 }
 
 SYMBOL_TABLE* init_symbol_table()
@@ -216,6 +224,7 @@ void release_symbol_table(SYMBOL_TABLE *pSymbolTable)
     while (pCurrentEntry)
     {
         pNextEntry = pCurrentEntry->next;
+        free(pCurrentEntry->label);
         free(pCurrentEntry);
         pCurrentEntry = pNextEntry;
     }
@@ -229,6 +238,7 @@ void release_cmd_table(CMD_TABLE *pCmdTable)
     while (pCurrentEntry)
     {
         pNextEntry = pCurrentEntry->next;
+        free(pCurrentEntry->MachineCodes);
         free(pCurrentEntry);
         pCurrentEntry = pNextEntry;
     }
@@ -300,17 +310,6 @@ void apply_to_symbol_table_entries(SYMBOL_TABLE* pSymbolTable, ACTION_TO_APPLY_T
     while (pCur)
     {
         funcToApply(pCur, additionalInfo);
-        pCur = pCur->next;
-    }
-}
-
-void print_symbol_table(SYMBOL_TABLE* pSymbolTable, FILE* fout)
-{
-    SYMBOL_TABLE_ENTRY *pCur = pSymbolTable->Head;
-    fprintf(fout, "Symbol table content:\n");
-    while (pCur)
-    {
-        fprintf(fout, "%32s |\t%3d\t| %x\n", pCur->label, pCur->addr, pCur->type);
         pCur = pCur->next;
     }
 }

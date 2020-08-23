@@ -148,8 +148,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="LangDefs.c" />
-    <ClCompile Include="main.c" />
     <ClCompile Include="Compiler.c" />
+    <ClCompile Include="Main.c" />
     <ClCompile Include="Parser.c" />
     <ClCompile Include="Tables.c" />
     <ClCompile Include="Translator.c" />

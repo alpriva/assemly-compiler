@@ -1,30 +1,40 @@
-#ifndef __UTILITIES__
+﻿#ifndef __UTILITIES__
 #define __UTILITIES__
 
-#define PRINT_NO_MEMORY_ERR() printf("Failed to allocate memory, exiting...\n"); 
+#define PRINT_NO_MEMORY_ERR() printf("Failed to allocate memory in file: %s. Line %d.\n", __FILE__, __LINE__);
 
 #define RETURN_ON_MEMORY_FAILURE(pointerToCheck, valToReturn) \
             if (!(pointerToCheck)) \
             { \
-                printf("Failed to allocate memory, exiting..."); \
+                PRINT_NO_MEMORY_ERR(); \
                 return (valToReturn); \
             }
-#define PRINT_WARN(lineCnt, message) printf("Warning: In line %d. %s\n", lineCnt, message);
-#define PRINT_ERR(lineCnt, message) printf("Error: In line %d. %s\n", lineCnt, message);
+
+#define PRINT_WARN(lineCnt, ...) { \
+                printf("Warning: In line %d. ", lineCnt); \
+                printf(__VA_ARGS__); \
+                printf("\n"); \
+            }
             
-#define GOTO_LABEL_ON_NULL(pointerToCheck, label, statusVar, statusToSet, lineCnt, message) \
+#define PRINT_ERR(lineCnt, ...) { \
+                printf("Error: In line %d. ", lineCnt); \
+                printf(__VA_ARGS__); \
+                printf("\n"); \
+            }
+            
+#define GOTO_LABEL_ON_NULL(pointerToCheck, label, statusVar, statusToSet, lineCnt, ...) \
             if (!pointerToCheck) \
             { \
                 statusVar = statusToSet; \
-                PRINT_ERR(lineCnt, message) \
+                PRINT_ERR(lineCnt, __VA_ARGS__) \
                 goto label; \
             }
 
 #define GOTO_LABEL_ON_STATUS_ERR(statusToCheck, label, statusVar, statusToSet, lineCnt, message) \
             GOTO_LABEL_ON_NULL(statusToCheck, label, statusVar, statusToSet, lineCnt, message)
 
-#define RETURN_STATUS_ON_ERR(valueToReturn, lineCnt, message) \
-            PRINT_ERR(lineCnt, message) \
+#define RETURN_STATUS_ON_ERR(valueToReturn, lineCnt, ...) \
+            PRINT_ERR(lineCnt, __VA_ARGS__) \
             return valueToReturn;
 
 typedef enum
@@ -33,6 +43,10 @@ typedef enum
     TRUE
 } BOOLEAN;
 
+/**
+* Creates a new string and concats the s1 and s2 strings to it. 
+* The caller responsibility is to release the allocated memory.
+*/
 char* concat(const char *s1, const char *s2);
 
 void free_variables(int count, ...);
@@ -70,14 +84,13 @@ typedef void(*FUNCTION_TO_APPLY_ON_LINKED_LIST_ENTRIES)(Node* pNode, void* addit
 */
 void apply_to_linked_list(LinkedList *pList, FUNCTION_TO_APPLY_ON_LINKED_LIST_ENTRIES applyFunc, void *additionalInfo);
 
-
 /**
 * Frees the list of strings
 */
 void free_linked_list(LinkedList *pList);
 
 /**
-* 
+* Creates an array of strings
 */
 char** create_array_of_strings(int elCnt);
 

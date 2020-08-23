@@ -1,9 +1,9 @@
-#ifndef __TRANSLATOR__
+﻿#ifndef __TRANSLATOR__
 #define __TRANSLATOR__
 
 #include "Utilities.h"
 /**
-* 
+* Returns if the given word is valid machine code.
 */
 BOOLEAN is_valid_machine_code(int code);
 

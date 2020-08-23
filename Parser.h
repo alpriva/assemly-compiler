@@ -1,17 +1,18 @@
-#ifndef __PARSER__
+﻿#ifndef __PARSER__
 #define __PARSER__
 
 #include "Utilities.h"
 
 /**
 * Retreives label from the command line. The function assigns the tail to the *endp.
-* In case label not found returns FALSE and *endp is not moved.
+* It returns FALSE in case of invalid label was found. Otherwise TRUE.
+* When label is not found or label had bad syntax the endp is not moved.
 */
 BOOLEAN get_label(char *command_line, char **endp, char* label, BOOLEAN* foundLabel, int lineCnt);
 
 /**
-* Retreives command from the command line. In case if not found or command unknown it FALSE.
-* The function assigns the tail to the *endp. the command is store in the commandBuffer.
+* Retreives command from the command line. In case if not found or command unknown it returns FALSE.
+* In case of success the function assigns the tail to the *endp. The command is stored in the commandBuffer.
 */
 BOOLEAN get_cmd(char *command_line, char **endp, char *commandBuffer, int lineCnt);
 

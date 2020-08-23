@@ -1,8 +1,9 @@
-#ifndef __TABLES__
+﻿#ifndef __TABLES__
 #define __TABLES__
 
 #include "Utilities.h"
 
+// Enum to be used to differentiate between different symbols in the symbol table.
 typedef enum
 {
     CODE = 1,
@@ -13,51 +14,51 @@ typedef enum
 
 typedef struct _SYMBOL_TABLE_ENTRY
 {
-    char* label;
-    int addr;
-    SYMBOL_TYPE type;
-    struct _SYMBOL_TABLE_ENTRY* next;
+    char* label;        // label as it came from the command line.
+    int addr;           // The symbol address in the code space.
+    SYMBOL_TYPE type;   // Type - bit mask to hold the symbol characteristics. 
+    struct _SYMBOL_TABLE_ENTRY* next;   // pointer to the next symbol in the linked list.
 } SYMBOL_TABLE_ENTRY;
 
 typedef struct 
 {
-    SYMBOL_TABLE_ENTRY* Head;
+    SYMBOL_TABLE_ENTRY* Head;   // pointer to the first symbol in the linked list.
 } SYMBOL_TABLE;
 
 typedef struct _CMD_TABLE_ENTRY
 {
-    int* MachineCodes;
-    int MachineCodesLength;
-    int cmdAddress;
-    struct _CMD_TABLE_ENTRY* next;
+    int* MachineCodes;          // array to hold machine codes for a command.
+    int MachineCodesLength;     // length of the machine codes array.
+    int cmdAddress;             // address of the command in the command space.
+    struct _CMD_TABLE_ENTRY* next; // pointer to the next command in the linked list.
 } CMD_TABLE_ENTRY;
 
 typedef struct
 {
-    CMD_TABLE_ENTRY* Head;
+    CMD_TABLE_ENTRY* Head;      // pointer to the first command in the linked list. 
 } CMD_TABLE;
 
 typedef struct _DATA_TABLE_ENTRY
 {
-    int data;
-    struct _DATA_TABLE_ENTRY* next;
+    int data;                           // data encoded to the machine word.
+    struct _DATA_TABLE_ENTRY* next;     // pointer to the next data element.
 } DATA_TABLE_ENTRY;
 
 typedef struct 
 {
-    DATA_TABLE_ENTRY* Head;  
+    DATA_TABLE_ENTRY* Head;    // pointer to the first data element in the linked list.          
 } DATA_TABLE;
 
 typedef struct _EXTERNAL_TABLE_ENTRY
 {
-    char* extLabel;
-    LinkedList* pExternalCodeAddresses;
-    struct _EXTERNAL_TABLE_ENTRY* next;
+    char* extLabel;                     // external label as it came from command line.
+    LinkedList* pExternalCodeAddresses; // linked list of addresses where the external is referenced.
+    struct _EXTERNAL_TABLE_ENTRY* next; // pointer to the next element in the external table.
 } EXTERNALS_TABLE_ENTRY;
 
 typedef struct
 {
-    EXTERNALS_TABLE_ENTRY* Head;
+    EXTERNALS_TABLE_ENTRY* Head;        // pointer to the first external element in the linked list.
 } EXTERNALS_TABLE;
 
 /**
@@ -87,11 +88,6 @@ typedef void(*ACTION_TO_APPLY_TO_SYMBOL_TABLE)(SYMBOL_TABLE_ENTRY*, void*);
 * as it passed by the caller.
 */
 void apply_to_symbol_table_entries(SYMBOL_TABLE* pSymbolTable, ACTION_TO_APPLY_TO_SYMBOL_TABLE funcToApply, void* additionalInfo);
-
-/**
-* Prints symbol table to fout.
-*/
-void print_symbol_table(SYMBOL_TABLE* pSymbolTable, FILE* fout);
 
 /**
 * Creates a new entry in the code table with the provided machine codes and adds it to it.

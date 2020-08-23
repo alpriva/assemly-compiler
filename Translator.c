@@ -1,4 +1,4 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "Translator.h"
@@ -12,6 +12,7 @@
 #define MIN_POSSIBLE_IM_INT_VALUE -0x100000
 #define MAX_POSSIBLE_IM_INT_VALUE 0x100000-1
 #define CPU_VALID_WORD_MASK 0xffffff
+#define STRING_NULL_TERMINATOR_VAL 0 
 
 /**
 * Invalid machine codes have bit 31 set.
@@ -27,17 +28,15 @@ BOOLEAN is_valid_machine_code(int code)
 int build_machine_code_for_string(char** operands, int** machineCodes)
 {
     int i;
-    size_t strLength = strlen(operands[0]) - 2;
+    size_t strLength = strlen(operands[0]) - 2; // 2 for '"' at the start and the end of the operand
     int* codeLines = (int*)malloc((strLength + 1) * sizeof(int));
-    if (!codeLines)
-    {
-        return -1;
-    }
+    RETURN_ON_MEMORY_FAILURE(codeLines, -1);
+
     for (i = 1; i < strLength + 1; i++)
     {
         codeLines[i-1] = (int)operands[0][i];
     }
-    codeLines[strLength] = 0;
+    codeLines[strLength] = STRING_NULL_TERMINATOR_VAL;   // the last word should be null terminator
     *machineCodes = codeLines;
     return (int)strLength + 1;
 }
@@ -50,18 +49,20 @@ int build_machine_code_for_data(char** operands, int operandsCnt, int** machineC
     int i;
     int* codeLines = (int*)malloc(sizeof(int) * operandsCnt);
     RETURN_ON_MEMORY_FAILURE(codeLines, -1);
+
     for (i = 0; i < operandsCnt; i++)
     {
         codeLines[i] = atoi(operands[i]);
         // the numbers range can be (-2^23)..(2^23-1)
         if (codeLines[i] < MIN_POSSIBLE_DATA_INT_VALUE || codeLines[i] > MAX_POSSIBLE_DATA_INT_VALUE)
         {
-            printf("Error: In line %d. Operand %d doesn't fit into 24 bits.\n", lineCnt, codeLines[i]);
+            PRINT_ERR(lineCnt, "Operand %d doesn't fit into 24 bits.", codeLines[i]);
             free(codeLines);
             return -1;
         }
         codeLines[i] = codeLines[i] & CPU_VALID_WORD_MASK;
     }
+
     *machineCodes = codeLines;
     return operandsCnt;
 }
@@ -81,11 +82,17 @@ int prepare_command_word(int opcode, int funct, ADDRESS_RESOLUTION_TYPE srcAddrR
             0x4;    // ARE - A always set for command.
 }
 
+/**
+* Prepare imidiate value translation to machine code.
+*/
 int prepare_imidiate_value(int value)
 {
-    return CPU_VALID_WORD_MASK & (value << 3 | 0x4);
+    return CPU_VALID_WORD_MASK & (value << 3 | 0x4);    // ARE - always set for immidiate value.
 }
 
+/**
+* Returns not valid machine code.
+*/
 int init_invalid_machine_code()
 {
     return INVALID_MACHINE_CODE_MASK;
@@ -121,6 +128,7 @@ ADDRESS_RESOLUTION_TYPE get_addr_resolution_type(int addrResBitMask, char* opera
     {
         return ADDR_RES_TYPE_RELATIVE;
     }
+
     return ADDR_RES_TYPE_DIRECT;
 }
 
@@ -143,6 +151,7 @@ BOOLEAN init_payload_code_line(int* machineCodes, ADDRESS_RESOLUTION_TYPE addrRe
     {
         machineCodes[codeLineNum] = init_invalid_machine_code();
     }
+
     return TRUE;
 }
 
@@ -211,6 +220,9 @@ prepare_to_return:
     return machineCodesCnt;
 }
 
+/**
+* Builds machine code for instruction.
+*/
 int build_machine_code_for_cmd(char* cmd, char** operands, int** machineCodes, int lineCnt)
 {
     int i;
@@ -222,7 +234,7 @@ int build_machine_code_for_cmd(char* cmd, char** operands, int** machineCodes, i
             return build_machine_code_for_existing_cmd(&commands[i], operands, machineCodes, lineCnt);
         }
     }
-    PRINT_ERR(lineCnt, "Command is not supported.")
+    PRINT_ERR(lineCnt, "Command - %s is not supported.", cmd);
     return -1;  // command not found
 }
 
