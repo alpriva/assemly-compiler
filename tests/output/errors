@@ -1,0 +1,33 @@
+
+Reading file: bdk
+
+Reading file: err1
+Error: line 2: missing operands
+Error: line 3: too many operands
+Error: line 4: undefined operation
+Error: line 5: undefined guiding
+Error: line 6: invalid label
+Error: line 7: too many commas
+Error: line 8: missing comma
+Error: line 9: missing operands
+Error: line 10: missing operands
+Error: line 11: missing operands
+Error: line 12: too many operands
+Error: line 13: too many operands
+Error: line 15: undefined operation
+Error: line 16: label already exists
+Error: line 17: invalid target
+Error: line 18: invalid source
+Error: line 20: invalid target
+Error: line 21: invalid source
+Error: line 22: wrong operand: operand is not a number
+Error: line 23: wrong operand: operand is not a string
+Error: line 24: this guiding can not be labeled
+
+Reading file: err2
+Error: line 2: invalid source
+Error: line 4: label does not exist
+Error: line 5: too many operands
+Error: line 6: invalid target
+
+Reading file: bdk2

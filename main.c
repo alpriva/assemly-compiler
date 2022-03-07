@@ -6,7 +6,7 @@
 
 /**
 * The program compiles the provided assembly files.
-* It supports multiple files provision. 
+* It supports multiple files provision.
 * Only files with extension .as are supported.
 * Only the file names shall be provided as arguments to this program.
 * For each provided file - <FILE_NAME>, the <FILE_NAME>.ob will be generated.
@@ -30,9 +30,10 @@ int main(int argc, char *argv[])
     {    
         fileName = concat(argv[i], ".as");
         fin = fopen(fileName, "r");
-        free(fileName);
+        free(fileName); // the fileName is not needed anymore.
         if (!fin)
         {
+            // if wrong file was provided it is considered as fatal error.
             printf("Error: can't open %s file\n", fileName);
             return -1;
         }

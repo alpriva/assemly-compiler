@@ -347,6 +347,12 @@ BOOLEAN first_pass(FILE* fin, SYMBOL_TABLE* pSymbolTable, CMD_TABLE* pCmdTable, 
             pSymbol = get_symbol_entry(pSymbolTable, operands[0]);
             if (pSymbol)    // if the symbol is already defined
             {
+                if (pSymbol->type & EXTERNAL)
+                {
+                    // another .external reference on the same label is not an error.
+                    free_array_of_strings(operands, 1);
+                    continue;
+                }
                 PRINT_ERR(lineCnt, "The symbol - %s is already defined in the current file.", operands[0]);
                 free_array_of_strings(operands, 1);
                 found_error = TRUE;

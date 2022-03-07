@@ -552,7 +552,7 @@ int prepare_operands_for_cmd_instr(char *command, char* commandLine, char*** ope
             {
                 if (!check_empty(commandLine))      // check that the rest of the command line is empty
                 {
-                    PRINT_ERR(lineCnt, "Extra characters after command - %s.", commandLine);
+                    PRINT_ERR(lineCnt, "Extra characters after the command");
                     return -1;
                 }
                 return 0;   // return 0 operands for the command
@@ -601,7 +601,7 @@ int prepare_operands_for_cmd_instr(char *command, char* commandLine, char*** ope
             }
             else if (!check_empty(commandLine))  // more characters in the command line
             {
-                PRINT_ERR(lineCnt, "Extra characters after command - %s.", commandLine);
+                PRINT_ERR(lineCnt, "Extra characters after command");
                 status = FALSE;
                 goto prepare_to_return;
             }

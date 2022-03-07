@@ -1,4 +1,8 @@
-﻿#ifndef __LANGDEFS__
+﻿/**
+* This module holds all the assembler language definitions. 
+*/
+
+#ifndef __LANGDEFS__
 #define __LANGDEFS__
 
 // Maximum line size in the source file to be compiled.
@@ -30,7 +34,7 @@ typedef enum
 
 typedef struct
 {
-    char* name;
+    char* name;     // directive description.
 } DIRECTIVE_TYPE;
 
 typedef struct
@@ -45,7 +49,7 @@ typedef struct
 
 typedef struct
 {
-    char* reg;
+    char* reg;  // register description.
 } REGISTER_TYPE;
 
 // array which holds all the supported directives.

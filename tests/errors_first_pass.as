@@ -95,7 +95,7 @@ LABEL1: .extern EXT1
 .extern label extra chars
 ; extern without label
 .extern
-; extern label is already defined
+; extern label is already defined in this file.
 .extern LABEL
 
 
