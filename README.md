@@ -1,6 +1,6 @@
 # Assembly compiler
 
-This project is an assembler, that is compiler 
+This project is a compiler 
 that translates assembly language (defined especially for
 this project) to machine language.
 It receives files in assembly language and builds 
